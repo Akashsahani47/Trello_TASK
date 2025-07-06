@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import CryptoJS from "crypto-js";
 
-const SECRET_KEY = "qwertyuiop"; 
+const SECRET_KEY = "qwertyuiop"; // must match the backend
 
 const TaskModal = ({ task, onClose }) => {
   const isEdit = !!task;
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -13,8 +14,13 @@ const TaskModal = ({ task, onClose }) => {
   });
 
   useEffect(() => {
-    if (task) setFormData(task);
-  }, [task]);
+    if (isEdit) {
+      setFormData({
+        ...task,
+        dueDate: task.dueDate?.split("T")[0] || "",
+      });
+    }
+  }, [task, isEdit]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -47,9 +53,21 @@ const TaskModal = ({ task, onClose }) => {
       });
 
       const encrypted = await res.text();
-      const data = decryptResponse(encrypted);
 
+      if (!res.ok) {
+        console.error("❌ Server responded with error:", encrypted);
+        alert("Error: " + encrypted);
+        return;
+      }
+
+      if (!encrypted) {
+        throw new Error("Empty response from server");
+      }
+
+      const data = decryptResponse(encrypted);
       alert(data.message || "Success");
+
+      // close modal and trigger fetchTasks in Dashboard
       onClose();
     } catch (err) {
       console.error("Error submitting task:", err.message);
@@ -60,7 +78,10 @@ const TaskModal = ({ task, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white rounded p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">{isEdit ? "Edit Task" : "Create Task"}</h2>
+        <h2 className="text-xl font-bold mb-4">
+          {isEdit ? "Edit Task" : "Create Task"}
+        </h2>
+
         <input
           type="text"
           name="title"
@@ -69,6 +90,7 @@ const TaskModal = ({ task, onClose }) => {
           value={formData.title}
           onChange={handleChange}
         />
+
         <textarea
           name="description"
           placeholder="Description"
@@ -76,29 +98,37 @@ const TaskModal = ({ task, onClose }) => {
           value={formData.description}
           onChange={handleChange}
         />
+
         <select
           name="status"
           className="w-full mb-2 p-2 border"
           value={formData.status}
           onChange={handleChange}
         >
-          <option>To Do</option>
-          <option>In Progress</option>
-          <option>Completed</option>
+          <option value="To Do">To Do</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
         </select>
+
         <input
           type="date"
           name="dueDate"
           className="w-full mb-2 p-2 border"
-          value={formData.dueDate?.split("T")[0] || ""}
+          value={formData.dueDate}
           onChange={handleChange}
         />
 
         <div className="flex justify-end space-x-2">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-400 rounded text-white">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-500 rounded text-white"
+          >
             Cancel
           </button>
-          <button onClick={handleSubmit} className="px-4 py-2 bg-blue-600 rounded text-white">
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-blue-600 rounded text-white"
+          >
             {isEdit ? "Update" : "Create"}
           </button>
         </div>
