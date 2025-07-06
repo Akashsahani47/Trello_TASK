@@ -12,7 +12,7 @@ export const AppContentProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [role, setRole] = useState(localStorage.getItem("role") || null);
 
-  // Save login data
+  
   const login = (token, role) => {
     setToken(token);
     setRole(role);

@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { AppContent } from '../context/AppContent';
 import CryptoJS from 'crypto-js';
 
-const SECRET_KEY = 'qwertyuiop'; 
+const SECRET_KEY = 'qwertyuiop';
 
 const Login = () => {
   const [authMode, setAuthMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [age, setAge] = useState('');
+  const [role, setRole] = useState('user'); 
 
   const navigate = useNavigate();
   const { login } = useContext(AppContent);
@@ -18,15 +19,21 @@ const Login = () => {
     e.preventDefault();
 
     const endpoint = authMode === 'signup' ? '/api/auth/signup' : '/api/auth/login';
-    const payload = authMode === 'signup' ? { email, password, age } : { email, password };
+    const payload =
+      authMode === 'signup'
+        ? { email, password, age, role } 
+        : { email, password };
 
-    const encryptedPayload = CryptoJS.AES.encrypt(JSON.stringify(payload), SECRET_KEY).toString();
+    const encryptedPayload = CryptoJS.AES.encrypt(
+      JSON.stringify(payload),
+      SECRET_KEY
+    ).toString();
 
     try {
       const res = await fetch(`http://localhost:3000${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: encryptedPayload })
+        body: JSON.stringify({ data: encryptedPayload }),
       });
 
       const encryptedText = await res.text();
@@ -35,7 +42,7 @@ const Login = () => {
       const decrypted = JSON.parse(decryptedText);
 
       if (decrypted.token) {
-        login(decrypted.token, decrypted.role || 'user'); // Default role fallback
+        login(decrypted.token, decrypted.role || 'user');
         navigate('/dashboard');
       } else {
         alert(decrypted.message || 'Login failed.');
@@ -54,6 +61,7 @@ const Login = () => {
         </h2>
 
         <form onSubmit={handleSubmit}>
+          {/* Email */}
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-1">Email</label>
             <input
@@ -65,6 +73,7 @@ const Login = () => {
             />
           </div>
 
+          {/* Password */}
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-1">Password</label>
             <input
@@ -76,17 +85,34 @@ const Login = () => {
             />
           </div>
 
+          {/* Age (Only on Signup) */}
           {authMode === 'signup' && (
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-1">Age</label>
-              <input
-                type="number"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                className="shadow border rounded w-full py-2 px-3 text-gray-700"
-                required
-              />
-            </div>
+            <>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-1">Age</label>
+                <input
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700"
+                  required
+                />
+              </div>
+
+              {/* Role (Only on Signup) */}
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-1">Role</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700"
+                  required
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </>
           )}
 
           <button

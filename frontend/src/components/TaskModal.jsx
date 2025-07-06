@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import CryptoJS from "crypto-js";
 
-const SECRET_KEY = "qwertyuiop"; // must match CRYPTO_SECRET in your .env
+const SECRET_KEY = "qwertyuiop"; 
 
 const TaskModal = ({ task, onClose }) => {
   const isEdit = !!task;

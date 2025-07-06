@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { encryptData } from "../config/crypto.js"; // ✅ Import encryption
 
 // Signup
 export const signup = async (req, res) => {
@@ -9,32 +10,49 @@ export const signup = async (req, res) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).send({ message: "Email already registered" });
+      const encrypted = encryptData({ message: "Email already registered" });
+      return res.status(400).send(encrypted);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ email, password: hashedPassword, age, role });
     await newUser.save();
 
-    return res.status(201).send({ message: "Signup successful" });
+    const token = jwt.sign(
+      { userId: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    const response = {
+      token,
+      role: newUser.role,
+      message: "Signup successful"
+    };
+
+    const encrypted = encryptData(response);
+    return res.status(201).send(encrypted);
   } catch (err) {
-    return res.status(500).send({ message: "Server error" });
+    const encrypted = encryptData({ message: "Server error" });
+    return res.status(500).send(encrypted);
   }
 };
 
 // Login
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password , role } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).send({ message: "User not found" });
+      const encrypted = encryptData({ message: "User not found" });
+      return res.status(404).send(encrypted);
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).send({ message: "Invalid credentials" });
+      const encrypted = encryptData({ message: "Invalid credentials" });
+      return res.status(401).send(encrypted);
     }
 
     const token = jwt.sign(
@@ -43,13 +61,21 @@ export const login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    return res.status(200).send({ token, role: user.role });
+    const response = {
+      token,
+      role: user.role,
+      message: "Login successful"
+    };
+
+    const encrypted = encryptData(response);
+    return res.status(200).send(encrypted);
   } catch (err) {
-    return res.status(500).send({ message: "Server error" });
+    const encrypted = encryptData({ message: "Server error" });
+    return res.status(500).send(encrypted);
   }
 };
 
-
+// Auth check
 export const isAuth = (req, res) => {
   try {
     const authHeader = req.headers.authorization;
